@@ -4,42 +4,53 @@ from database.dao import DAO
 
 class Model:
     def __init__(self):
-        self.lista_categorie= []
-        self.lista_prodotti_per_categoria= []
 
-        self.G = nx.Graph()
-        self._nodes = []
-        self._edges = []
+        self.G = nx.DiGraph()
+        self._products = []
+        self.id_map= {}
 
-        self.load_categorie()
 
     def get_date_range(self):
         return DAO.get_date_range()
 
-    def load_categorie(self):
-        self.lista_categorie = DAO.get_categorie()
 
-    def build_graph(self, category_name):
+    def get_categories(self):
+        return DAO.get_all_categories()
+
+    def build_graph(self, category, date1, date2):
         self.G.clear()
 
-        self._nodes = []
-        self._edges = []
-
         # creo i nodi (prodotti per categoria)
-        self.lista_prodotti_per_categoria = DAO.get_nodi_per_categoria(category_name)
-        for p in self.lista_prodotti_per_categoria:
-            self._nodes.append(p)
-        self.G.add_nodes_from(self._nodes)
+        self._products = DAO.get_all_products_by_category(category)
+        for p in self._products:
+            self.id_map[p.id] = p
+        self.G.add_nodes_from(self._products)
 
         # creo gli archi
-        tmp_edges = DAO.get_all_weighted_neigh(year, shape)  # ottengo tutti gli archi
-        self._edges.clear()
-        for e in tmp_edges:
-            self._edges.append((self.id_map[e[0]], self.id_map[e[1]], e[2]))
-            '''
-            self.id_map[e[0]] = oggetto stato1 (dove e[0]= row['st1'] è l'id dello stato1)
-            self.id_map[e[1]] = oggetto stato2 (dove e[1]= row['st2'] è l'id dello stato2) 
-            e[2] = N (è il peso di ogni arco)
-            '''
+        all_edges= DAO.get_edges(category, date1, date2, self.id_map)
+        for e in all_edges:
+            self.G.add_edge(e[0], e[1], weight=e[2])
 
-        self.G.add_weighted_edges_from(self._edges)  # creo gli archi dandogli già il peso
+    def get_graph_details(self):
+        return self.G.number_of_nodes(), self.G.number_of_edges()
+
+    def get_best_prodotti(self):
+        best_prodotti= []
+        for n in self.G.nodes:
+            score= 0
+            for e_out in self.G.out_edges(n, data=True):
+                score += e_out[2]['weight']
+            for e_in in self.G.in_edges(n, data=True):
+                score -= e_in[2]['weight']
+
+            best_prodotti.append((n, score))
+
+        best_prodotti.sort(reverse=True, key=lambda x: x[1])
+        return best_prodotti[0:5] #voglio solo i primi 5
+
+    def get_all_nodes(self):
+        nodes= list(self.G.nodes())
+        nodes.sort(key=lambda x: x.product_name)
+        return nodes
+
+

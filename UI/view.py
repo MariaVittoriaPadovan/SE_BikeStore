@@ -30,7 +30,8 @@ class View:
         self.txt_titolo = ft.Text(value="Gestione Vendita Biciclette", size=30, weight=ft.FontWeight.BOLD)
 
         # Riga 1
-        self.dd_category = ft.Dropdown(label="Categoria", width=200) # TODO: Gestire il dropdown
+        self.dd_category = ft.Dropdown(label="Categoria", width=200, on_change=self.controller.choice_category) # TODO: Gestire il dropdown
+        self.controller.populate_dd_category()
 
         self.dp1 = ft.DatePicker(
             on_change=lambda e: print(f"Giorno selezionato: {self.dp1.value}"),
@@ -61,12 +62,11 @@ class View:
         row1 = ft.Row([self.dd_category, self.pulsante_start_date, self.pulsante_end_date, self.pulsante_crea_grafo, self.pulsante_best_prodotti],
                       alignment=ft.MainAxisAlignment.CENTER)
 
-        self.controller.populate_dd()
 
         # Riga 2
         self.txt_lunghezza_cammino = ft.TextField(label="Lunghezza Cammino", width=120)
-        self.dd_prodotto_iniziale = ft.Dropdown(label="Prodotto Iniziale", width=350) # TODO: Gestire il dropdown
-        self.dd_prodotto_finale = ft.Dropdown(label="Prodotto Finale", width=350) # TODO: Gestire il dropdown
+        self.dd_prodotto_iniziale = ft.Dropdown(label="Prodotto Iniziale", width=350, on_change=self.controller.choice_prod_start) # TODO: Gestire il dropdown
+        self.dd_prodotto_finale = ft.Dropdown(label="Prodotto Finale", width=350, on_change=self.controller.choice_prod_end) # TODO: Gestire il dropdown
 
         self.pulsante_cerca_cammino = ft.ElevatedButton(text="Cerca", on_click=self.controller.handle_cerca_cammino, width=120)
 

@@ -1,4 +1,6 @@
 from database.DB_connect import DBConnect
+from model.category import Category
+from model.product import Product
 
 class DAO:
     @staticmethod
@@ -25,7 +27,7 @@ class DAO:
 
 
     @staticmethod
-    def get_categorie():
+    def get_all_categories():
         cnx = DBConnect.get_connection()
         result = []
 
@@ -35,26 +37,26 @@ class DAO:
 
         cursor = cnx.cursor(dictionary=True)
         query = """
-                SELECT DISTINCT category_name
+                SELECT *
                 FROM category
                 """
 
         try:
             cursor.execute(query)
             for row in cursor:
-                result.append(row['category_name'])
+                result.append(Category(**row))
 
         except Exception as e:
-            print("Errore durante la query state")
+            print("Errore durante la query category")
             result = None
         finally:  # fa quello che scrivo sia che vado nel try sia che vado nell'except
             cursor.close()
             cnx.close()
 
-        return result  # lista di categorie
+        return result  # lista di oggetti categorie
 
     @staticmethod
-    def get_nodi_per_categoria(category_name):
+    def get_all_products_by_category(cat):
         cnx = DBConnect.get_connection()
         result = []
 
@@ -64,27 +66,27 @@ class DAO:
 
         cursor = cnx.cursor(dictionary=True)
         query = """
-                SELECT id
-                FROM category
-                WHERE category_name = %s
+                SELECT *
+                FROM product
+                WHERE category_id = %s
                 """
 
         try:
-            cursor.execute(query, (category_name,))
+            cursor.execute(query, (cat.id,))
             for row in cursor:
-                result.append(row['id'])
+                result.append(Product(**row))
 
         except Exception as e:
-            print("Errore durante la query state")
+            print("Errore durante la query product")
             result = None
         finally:  # fa quello che scrivo sia che vado nel try sia che vado nell'except
             cursor.close()
             cnx.close()
 
-        return result  # lista id prodotti di una determinata categoria passata come parametro
+        return result  # lista di oggetti prodotto di una determinata categoria passata come parametro
 
     @staticmethod
-    def prodotti_connessi(data_inizio, data_fine):
+    def get_edges(c, d1, d2, id_map): #c= categoria, d1= data inizio, d2= data fine
         cnx = DBConnect.get_connection()
         result = []
 
@@ -94,21 +96,33 @@ class DAO:
 
         cursor = cnx.cursor(dictionary=True)
         query = """
-                SELECT o1.product_id AS p1, o2.product_id AS p2
-                FROM order_item o1, order_item o2, order o
-                WHERE o1.product_id <> o2.product_id 
-                      AND COUNT(o1.product_id) > 0 AND COUNT(o2.product_id) > 0
-                      AND o.id = o1.order_id AND o.id = o2.order_id
-                      AND o.order_date BETWEEN %s AND %s
+                SELECT t1.id AS n1, t2.id AS n2, t1.num+t2.num AS peso
+                FROM (SELECT p.id, count(*) AS num
+                      FROM product p, order_item oi, `order` o
+                      WHERE p.id = oi.product_id AND oi.order_id = o.id
+                            AND o.order_date BETWEEN %s AND %s
+                            AND p.category_id = %s
+                      GROUP BY (p.id)
+                      ORDER BY p.id) t1,
+                     (SELECT p.id, count(*) AS num
+                      FROM product p, order_item oi, `order` o
+                      WHERE p.id = oi.product_id AND oi.order_id = o.id
+                            AND o.order_date BETWEEN %s AND %s
+                            AND p.category_id = %s
+                      GROUP BY (p.id)
+                      ORDER BY p.id) t2
+                WHERE t1.num >= t2.num
+                      AND t1.id <> t2.id
+                ORDER BY peso DESC, n1 ASC, n2 ASC
                 """
 
         try:
-            cursor.execute(query, (data_inizio, data_fine, ))
+            cursor.execute(query, (d1, d2, c.id, d1, d2, c.id, ))
             for row in cursor:
-                result.append(row['id'])
+                result.append((id_map[row['n1']], id_map[row['n2']], row['peso']))
 
         except Exception as e:
-            print("Errore durante la query state")
+            print("Errore durante la query edges")
             result = None
         finally:  # fa quello che scrivo sia che vado nel try sia che vado nell'except
             cursor.close()
