@@ -61,6 +61,8 @@ class View:
         row1 = ft.Row([self.dd_category, self.pulsante_start_date, self.pulsante_end_date, self.pulsante_crea_grafo, self.pulsante_best_prodotti],
                       alignment=ft.MainAxisAlignment.CENTER)
 
+        self.controller.populate_dd()
+
         # Riga 2
         self.txt_lunghezza_cammino = ft.TextField(label="Lunghezza Cammino", width=120)
         self.dd_prodotto_iniziale = ft.Dropdown(label="Prodotto Iniziale", width=350) # TODO: Gestire il dropdown
