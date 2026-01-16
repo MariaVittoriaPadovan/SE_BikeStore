@@ -1,3 +1,5 @@
+import copy
+
 import networkx as nx
 from database.dao import DAO
 
@@ -8,6 +10,9 @@ class Model:
         self.G = nx.DiGraph()
         self._products = []
         self.id_map= {}
+
+        self.best_path= []
+        self.best_score = 0
 
 
     def get_date_range(self):
@@ -53,4 +58,38 @@ class Model:
         nodes.sort(key=lambda x: x.product_name)
         return nodes
 
+
+    def get_best_path(self, lung, start, end):
+        self.best_path= []
+        self.best_score = 0
+        parziale= [start]
+        self._ricorsione(parziale, lung, start, end)
+        return self.best_path, self.best_score
+
+    def _ricorsione(self, parziale, lung, start, end):
+        #condizione di terminazione
+        if len(parziale) == lung:
+            if parziale[-1] == end and self._get_score(parziale) > self.best_score:
+                self.best_score= self._get_score(parziale)
+                self.best_path= copy.deepcopy(parziale)
+            return
+
+        #ciclo di ricorsione
+        for n in self.G.successors(parziale[-1]): #per tutti i nodi raggiungibili dal mio ultimo nodo
+            #self.G.successors(n) è un metodo di NetworkX per grafi diretti, restituisce tutti i nodi raggiungibili con un arco uscente dal nodo n
+            if n not in parziale: #ogni nodo deve comparire al massimo una volta
+                parziale.append(n)
+                self._ricorsione(parziale, lung, start, end)
+                parziale.pop()
+
+    def _get_score(self, parziale): #calcolo il peso totale del cammino
+        score = 0
+        for i in range(1, len(parziale)): #scorre gli archi
+            score += self.G[parziale[i-1]][parziale[i]]['weight']
+            '''
+            parziale[i-1] nodo di partenza
+            parziale[i] nodo di arrivo
+            'weight' peso dell'arco tra questi due nodi
+            '''
+        return score
 

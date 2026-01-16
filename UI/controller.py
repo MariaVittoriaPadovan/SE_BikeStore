@@ -57,6 +57,7 @@ class Controller:
         self._populate_dd_products()
         self._view.update()
 
+
     def _populate_dd_products(self):
         all_nodes= self._model.get_all_nodes()
 
@@ -79,6 +80,7 @@ class Controller:
                 self.dd_prod_end_value = option.data
                 break
 
+
     def handle_best_prodotti(self, e):
         """ Handler per gestire la ricerca dei prodotti migliori """
         # TODO
@@ -93,3 +95,28 @@ class Controller:
     def handle_cerca_cammino(self, e):
         """ Handler per gestire il problema ricorsivo di ricerca del cammino """
         # TODO
+        if self._view.txt_lunghezza_cammino.value == '':
+            self._view.txt_risultato.controls.clear()
+            self._view.txt_risultato.controls.append(ft.Text("Inserire lunghezza del cammino:"))
+            self._view.update()
+            return
+        try:
+            lun= int(self._view.txt_lunghezza_cammino.value)
+        except ValueError:
+            self._view.txt_risultato.controls.clear()
+            self._view.txt_risultato.controls.append(ft.Text("Valore inserito non numerico"))
+            self._view.update()
+            return
+
+        path, score= self._model.get_best_path(lun, self.dd_prod_start_value, self.dd_prod_end_value)
+        if len(path) == 0:
+            self._view.txt_risultato.controls.clear()
+            self._view.txt_risultato.controls.append(ft.Text("Nessun cammino trovato"))
+            self._view.update()
+            return
+        self._view.txt_risultato.controls.clear()
+        self._view.txt_risultato.controls.append(ft.Text("Cammino migliore:"))
+        for p in path:
+            self._view.txt_risultato.controls.append(ft.Text(f"{p}"))
+        self._view.txt_risultato.controls.append(ft.Text(f"Score: {score}"))
+        self._view.update()
